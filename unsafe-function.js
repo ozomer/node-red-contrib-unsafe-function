@@ -218,6 +218,6 @@ module.exports = function(RED) {
             this.error(err);
         }
     }
-    RED.nodes.registerType("function",FunctionNode);
+    RED.nodes.registerType("unsafe-function",FunctionNode);
     RED.library.register("functions");
 };
