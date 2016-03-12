@@ -19,7 +19,7 @@
 module.exports = function(RED) {
     "use strict";
     var util = require("util");
-    var vm = require("vm");
+    var requireFromString =  require('require-from-string');
 
     function sendResults(node,_msgid,msgs) {
         if (msgs === null) {
@@ -51,26 +51,25 @@ module.exports = function(RED) {
         var node = this;
         this.name = n.name;
         this.func = n.func;
-        var functionText = "var results = null;"+
-                           "results = (function(msg){ "+
-                              "var __msgid__ = msg._msgid;"+
-                              "var node = {"+
-                                 "log:__node__.log,"+
-                                 "error:__node__.error,"+
-                                 "warn:__node__.warn,"+
-                                 "on:__node__.on,"+
-                                 "status:__node__.status,"+
-                                 "send:function(msgs){ __node__.send(__msgid__,msgs);}"+
-                              "};\n"+
-                              this.func+"\n"+
-                           "})(msg);";
+        var functionText = "module.exports = function(__node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
+        "  return function(msg) { " +
+        "    var __msgid__ = msg._msgid;" +
+        "    var node = {" +
+        "      log:__node__.log," +
+        "      error:__node__.error," +
+        "      warn:__node__.warn," +
+        "      on:__node__.on," +
+        "      status:__node__.status," +
+        "      send:function(msgs) { __node__.send(__msgid__,msgs);}" +
+        "    };\n" +
+        this.func + "\n" +
+        "  };" +
+        "};";
+
         this.topic = n.topic;
         this.outstandingTimers = [];
         this.outstandingIntervals = [];
         var sandbox = {
-            console:console,
-            util:util,
-            Buffer:Buffer,
             __node__: {
                 log: function() {
                     node.log.apply(node, arguments);
@@ -165,15 +164,13 @@ module.exports = function(RED) {
                 }
             }
         };
-        var context = vm.createContext(sandbox);
         try {
-            this.script = vm.createScript(functionText);
+            this.script = requireFromString(functionText)(sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
             this.on("input", function(msg) {
                 try {
                     var start = process.hrtime();
-                    context.msg = msg;
-                    this.script.runInContext(context);
-                    sendResults(this,msg._msgid,context.results);
+                    var results = this.script(msg);
+                    sendResults(this, msg._msgid, results);
 
                     var duration = process.hrtime(start);
                     var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
