@@ -41,8 +41,26 @@ module.exports = function(RED) {
                 }
             }
         }
-        if (msgCount>0) {
-            node.send(msgs);
+        if (msgCount <= 0) {
+          return;
+        }
+        if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_ASYNC_SEND) {
+          // Create empty array of the same length.
+          var emptyArray = msgs.map(function() {
+            return null;
+          });
+          msgs.forEach(function(wireMessages, wireIndex) {
+            (util.isArray(wireMessages)?wireMessages:[wireMessages]).forEach(function(msg) {
+              // Fill with a single message.
+              var arr = emptyArray.slice();
+              arr[wireIndex] = msg;
+              setImmediate(function() {
+                node.send(arr);
+              });
+            });
+          });
+        } else {
+          node.send(msgs);
         }
     }
 
@@ -164,46 +182,18 @@ module.exports = function(RED) {
                 }
             }
         };
+
         try {
             this.script = requireFromString(functionText)(sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
-            this.on("input", function(msg) {
-                try {
-                    var start = process.hrtime();
-                    var results = this.script(msg);
-                    sendResults(this, msg._msgid, results);
-
-                    var duration = process.hrtime(start);
-                    var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
-                    this.metric("duration", msg, converted);
-                    if (process.env.NODE_RED_FUNCTION_TIME) {
-                        this.status({fill:"yellow",shape:"dot",text:""+converted});
-                    }
-                } catch(err) {
-
-                    var line = 0;
-                    var errorMessage;
-                    var stack = err.stack.split(/\r?\n/);
-                    if (stack.length > 0) {
-                        while (line < stack.length && stack[line].indexOf("ReferenceError") !== 0) {
-                            line++;
-                        }
-
-                        if (line < stack.length) {
-                            errorMessage = stack[line];
-                            var m = /:(\d+):(\d+)$/.exec(stack[line+1]);
-                            if (m) {
-                                var lineno = Number(m[1])-1;
-                                var cha = m[2];
-                                errorMessage += " (line "+lineno+", col "+cha+")";
-                            }
-                        }
-                    }
-                    if (!errorMessage) {
-                        errorMessage = err.toString();
-                    }
-                    this.error(errorMessage, msg);
-                }
-            });
+            if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_ASYNC_RECEIVE) {
+              this.on("input", function(msg) {
+                setImmediate(function() {
+                  handle(msg);
+                });
+              });
+            } else {
+              this.on("input", handle);
+            }
             this.on("close", function() {
                 while(node.outstandingTimers.length > 0) {
                     clearTimeout(node.outstandingTimers.pop());
@@ -216,6 +206,45 @@ module.exports = function(RED) {
             // eg SyntaxError - which v8 doesn't include line number information
             // so we can't do better than this
             this.error(err);
+        }
+
+        function handle(msg) {
+          try {
+            var start = process.hrtime();
+            var results = node.script(msg);
+            sendResults(node, msg._msgid, results);
+
+            var duration = process.hrtime(start);
+            var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
+            node.metric("duration", msg, converted);
+            if (process.env.NODE_RED_FUNCTION_TIME) {
+              node.status({fill:"yellow",shape:"dot",text:""+converted});
+            }
+          } catch(err) {
+
+            var line = 0;
+            var errorMessage;
+            var stack = err.stack.split(/\r?\n/);
+            if (stack.length > 0) {
+              while (line < stack.length && stack[line].indexOf("ReferenceError") !== 0) {
+                line++;
+              }
+
+              if (line < stack.length) {
+                errorMessage = stack[line];
+                var m = /:(\d+):(\d+)$/.exec(stack[line+1]);
+                if (m) {
+                  var lineno = Number(m[1])-1;
+                  var cha = m[2];
+                  errorMessage += " (line "+lineno+", col "+cha+")";
+                }
+              }
+            }
+            if (!errorMessage) {
+              errorMessage = err.toString();
+            }
+            node.error(errorMessage, msg);
+          }
         }
     }
     RED.nodes.registerType("unsafe-function",FunctionNode);
