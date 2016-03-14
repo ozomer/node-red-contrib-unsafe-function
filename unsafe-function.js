@@ -211,7 +211,9 @@ module.exports = function(RED) {
         var profiling = {
           "max": 0,
           "total": 0,
-          "count": 0
+          "count": 0,
+          "debounce": null,
+          "status_count": -1 // current count in status message
         };
         function handle(msg) {
           try {
@@ -226,11 +228,22 @@ module.exports = function(RED) {
               profiling.count += 1;
               profiling.total += (duration[0] * 1e9 + duration[1]) / 1000000;
               profiling.max = Math.max(profiling.max, converted);
-              node.status({
-                fill: "yellow",
-                shape: "dot",
-                text: "max: " + profiling.max + ", total: " + (Math.round(profiling.total * 100) / 100) + ", count: " + profiling.count
-              });
+              if (!profiling.debounce) {
+                profiling.debounce = setInterval(function() {
+                  if (profiling.status_count == profiling.count) {
+                    // count hasn't changed. stop interval.
+                    clearInterval(profiling.debounce);
+                    profiling.debounce = null;
+                    return;
+                  }
+                  profiling.status_count = profiling.count;
+                  node.status({
+                    fill: "yellow",
+                    shape: "dot",
+                    text: "max: " + profiling.max + ", total: " + (Math.round(profiling.total * 100) / 100) + ", count: " + profiling.count
+                  });
+                }, 1000); // limited rate for status messages.
+              }
             } else if (process.env.NODE_RED_FUNCTION_TIME) {
               node.status({fill:"yellow",shape:"dot",text:""+converted});
             }
