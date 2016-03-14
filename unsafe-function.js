@@ -224,7 +224,7 @@ module.exports = function(RED) {
             node.metric("duration", msg, converted);
             if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_PROFILING) {
               profiling.count += 1;
-              profiling.total += converted;
+              profiling.total += (duration[0] * 1e9 + duration[1]) / 1000000;
               profiling.max = Math.max(profiling.max, converted);
               node.status({
                 fill: "yellow",
