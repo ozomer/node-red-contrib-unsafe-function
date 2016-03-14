@@ -50,12 +50,40 @@ module.exports = function(RED) {
             return null;
           });
           msgs.forEach(function(wireMessages, wireIndex) {
+            if (!wireMessages) {
+              return;
+            }
             (util.isArray(wireMessages)?wireMessages:[wireMessages]).forEach(function(msg) {
               // Fill with a single message.
               var arr = emptyArray.slice();
               arr[wireIndex] = [msg];
               setImmediate(function() {
-                node.send(arr);
+                try {
+                  node.send(arr);
+                } catch(err) {
+                  var line = 0;
+                  var errorMessage;
+                  var stack = err.stack.split(/\r?\n/);
+                  if (stack.length > 0) {
+                    while (line < stack.length && stack[line].indexOf("ReferenceError") !== 0) {
+                      line++;
+                    }
+
+                    if (line < stack.length) {
+                      errorMessage = stack[line];
+                      var m = /:(\d+):(\d+)$/.exec(stack[line+1]);
+                      if (m) {
+                        var lineno = Number(m[1])-1;
+                        var cha = m[2];
+                        errorMessage += " (line "+lineno+", col "+cha+")";
+                      }
+                    }
+                  }
+                  if (!errorMessage) {
+                    errorMessage = err.toString();
+                  }
+                  node.error(errorMessage, msg);
+                }
               });
             });
           });
