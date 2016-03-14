@@ -229,7 +229,7 @@ module.exports = function(RED) {
               node.status({
                 fill: "yellow",
                 shape: "dot",
-                text: "max: " + profiling.max + "\ntotal: " + profiling.total + "\ncount: " + profiling.count
+                text: "max: " + profiling.max + ", total: " + profiling.total + ", count: " + profiling.count
               });
             } else if (process.env.NODE_RED_FUNCTION_TIME) {
               node.status({fill:"yellow",shape:"dot",text:""+converted});
