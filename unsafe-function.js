@@ -53,7 +53,7 @@ module.exports = function(RED) {
             (util.isArray(wireMessages)?wireMessages:[wireMessages]).forEach(function(msg) {
               // Fill with a single message.
               var arr = emptyArray.slice();
-              arr[wireIndex] = msg;
+              arr[wireIndex] = [msg];
               setImmediate(function() {
                 node.send(arr);
               });
