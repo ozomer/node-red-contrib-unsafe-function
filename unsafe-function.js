@@ -208,6 +208,11 @@ module.exports = function(RED) {
             this.error(err);
         }
 
+        var profiling = {
+          "max": 0,
+          "total": 0,
+          "count": 0
+        };
         function handle(msg) {
           try {
             var start = process.hrtime();
@@ -217,7 +222,16 @@ module.exports = function(RED) {
             var duration = process.hrtime(start);
             var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
             node.metric("duration", msg, converted);
-            if (process.env.NODE_RED_FUNCTION_TIME) {
+            if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_PROFILING) {
+              profiling.count += 1;
+              profiling.total += converted;
+              profiling.max = Math.max(profiling.max, converted);
+              node.status({
+                fill: "yellow",
+                shape: "dot",
+                text: "max: " + profiling.max + "\ntotal: " + profiling.total + "\ncount: " + profiling.count
+              });
+            } else if (process.env.NODE_RED_FUNCTION_TIME) {
               node.status({fill:"yellow",shape:"dot",text:""+converted});
             }
           } catch(err) {
