@@ -18,19 +18,18 @@
 
 module.exports = function(RED) {
     "use strict";
-    var util = require("util");
     var requireFromString =  require('require-from-string');
 
     function sendResults(node,_msgid,msgs) {
         if (msgs === null) {
             return;
-        } else if (!util.isArray(msgs)) {
+        } else if (!Array.isArray(msgs)) {
             msgs = [msgs];
         }
         var msgCount = 0;
         for (var m=0;m<msgs.length;m++) {
             if (msgs[m]) {
-                if (util.isArray(msgs[m])) {
+                if (Array.isArray(msgs[m])) {
                     for (var n=0; n < msgs[m].length; n++) {
                         msgs[m][n]._msgid = _msgid;
                         msgCount++;
@@ -53,7 +52,7 @@ module.exports = function(RED) {
             if (!wireMessages) {
               return;
             }
-            (util.isArray(wireMessages)?wireMessages:[wireMessages]).forEach(function(msg) {
+            (Array.isArray(wireMessages)?wireMessages:[wireMessages]).forEach(function(msg) {
               // Fill with a single message.
               var arr = emptyArray.slice();
               arr[wireIndex] = [msg];
