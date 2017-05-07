@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "description": "The fast and furious version of function nodes",
   "dependencies": {
-    "require-from-string": "1.1.0"
+    "require-from-string": "1.2.x"
   },
   "repository": {
     "type": "git",
