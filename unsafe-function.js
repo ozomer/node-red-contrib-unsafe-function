@@ -1,5 +1,5 @@
 /**
- * Edited by Awear Solutions Ltd, 2016.
+ * Edited by Awear Solutions Ltd, 2017.
  *
  * Copyright 2013,2015 IBM Corp.
  *
@@ -43,7 +43,7 @@ module.exports = function(RED) {
         if (msgCount <= 0) {
           return;
         }
-        if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_ASYNC_SEND) {
+        if (RED.settings.nodeRedContribUnsafeFunctionAsyncSend) {
           // Create empty array of the same length.
           var emptyArray = msgs.map(function() {
             return null;
@@ -212,7 +212,7 @@ module.exports = function(RED) {
 
         try {
             this.script = requireFromString(functionText)(sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
-            if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_ASYNC_RECEIVE) {
+            if (RED.settings.nodeRedContribUnsafeFunctionAsyncReceive) {
               this.on("input", function(msg) {
                 setImmediate(function() {
                   handle(msg);
@@ -251,7 +251,7 @@ module.exports = function(RED) {
             var duration = process.hrtime(start);
             var converted = Math.floor((duration[0] * 1e9 + duration[1])/10000)/100;
             node.metric("duration", msg, converted);
-            if (process.env.NODE_RED_CONTRIB_UNSAFE_FUNCTION_PROFILING) {
+            if (RED.settings.nodeRedContribUnsafeFunctionProfiling) {
               profiling.count += 1;
               profiling.total += (duration[0] * 1e9 + duration[1]) / 1000000;
               profiling.max = Math.max(profiling.max, converted);
