@@ -29,14 +29,23 @@ module.exports = function(RED) {
         var msgCount = 0;
         for (var m=0;m<msgs.length;m++) {
             if (msgs[m]) {
-                if (Array.isArray(msgs[m])) {
-                    for (var n=0; n < msgs[m].length; n++) {
-                        msgs[m][n]._msgid = _msgid;
-                        msgCount++;
+                if (!Array.isArray(msgs[m])) {
+                    msgs[m] = [msgs[m]];
+                }
+                for (var n=0; n < msgs[m].length; n++) {
+                    var msg = msgs[m][n];
+                    if (msg !== null && msg !== undefined) {
+                        if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !Array.isArray(msg)) {
+                            msg._msgid = _msgid;
+                            msgCount++;
+                        } else {
+                            var type = typeof msg;
+                            if (type === 'object') {
+                                type = Buffer.isBuffer(msg)?'Buffer':(Array.isArray(msg)?'Array':'Date');
+                            }
+                            node.error(RED._("function.error.non-message-returned",{ type: type }))
+                        }
                     }
-                } else {
-                    msgs[m]._msgid = _msgid;
-                    msgCount++;
                 }
             }
         }
