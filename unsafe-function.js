@@ -105,7 +105,7 @@ module.exports = function(RED) {
         var node = this;
         this.name = n.name;
         this.func = n.func;
-        var functionText = "module.exports = function(__node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
+        var functionText = "module.exports = function(RED, __node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
         "  return function(msg) { " +
         "    var __msgid__ = msg._msgid;" +
         "    var node = {" +
@@ -124,6 +124,9 @@ module.exports = function(RED) {
         this.outstandingTimers = [];
         this.outstandingIntervals = [];
         var sandbox = {
+            RED: {
+                util: RED.util
+            },
             __node__: {
                 log: function() {
                     node.log.apply(node, arguments);
@@ -232,7 +235,7 @@ module.exports = function(RED) {
         };
 
         try {
-            this.script = requireFromString(functionText)(sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
+            this.script = requireFromString(functionText)(sandbox.RED, sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
             if (RED.settings.nodeRedContribUnsafeFunctionAsyncReceive) {
               this.on("input", function(msg) {
                 setImmediate(function() {
