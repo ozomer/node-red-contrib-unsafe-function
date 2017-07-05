@@ -154,6 +154,9 @@ module.exports = function(RED) {
                 get: function() {
                     return node.context().get.apply(node,arguments);
                 },
+                keys: function() {
+                    return node.context().keys.apply(node,arguments);
+                },
                 get global() {
                     return node.context().global;
                 },
@@ -167,6 +170,9 @@ module.exports = function(RED) {
                 },
                 get: function() {
                     return node.context().flow.get.apply(node,arguments);
+                },
+                keys: function() {
+                    return node.context().flow.keys.apply(node,arguments);
                 }
             },
             global: {
@@ -175,6 +181,9 @@ module.exports = function(RED) {
                 },
                 get: function() {
                     return node.context().global.get.apply(node,arguments);
+                },
+                keys: function() {
+                    return node.context().global.keys.apply(node,arguments);
                 }
             },
             setTimeout: function () {
