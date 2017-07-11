@@ -29,14 +29,23 @@ module.exports = function(RED) {
         var msgCount = 0;
         for (var m=0;m<msgs.length;m++) {
             if (msgs[m]) {
-                if (Array.isArray(msgs[m])) {
-                    for (var n=0; n < msgs[m].length; n++) {
-                        msgs[m][n]._msgid = _msgid;
-                        msgCount++;
+                if (!Array.isArray(msgs[m])) {
+                    msgs[m] = [msgs[m]];
+                }
+                for (var n=0; n < msgs[m].length; n++) {
+                    var msg = msgs[m][n];
+                    if (msg !== null && msg !== undefined) {
+                        if (typeof msg === 'object' && !Buffer.isBuffer(msg) && !Array.isArray(msg)) {
+                            msg._msgid = _msgid;
+                            msgCount++;
+                        } else {
+                            var type = typeof msg;
+                            if (type === 'object') {
+                                type = Buffer.isBuffer(msg)?'Buffer':(Array.isArray(msg)?'Array':'Date');
+                            }
+                            node.error(RED._("function.error.non-message-returned",{ type: type }))
+                        }
                     }
-                } else {
-                    msgs[m]._msgid = _msgid;
-                    msgCount++;
                 }
             }
         }
@@ -96,7 +105,7 @@ module.exports = function(RED) {
         var node = this;
         this.name = n.name;
         this.func = n.func;
-        var functionText = "module.exports = function(__node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
+        var functionText = "module.exports = function(RED, __node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
         "  return function(msg) { " +
         "    var __msgid__ = msg._msgid;" +
         "    var node = {" +
@@ -115,6 +124,9 @@ module.exports = function(RED) {
         this.outstandingTimers = [];
         this.outstandingIntervals = [];
         var sandbox = {
+            RED: {
+                util: RED.util
+            },
             __node__: {
                 log: function() {
                     node.log.apply(node, arguments);
@@ -129,6 +141,9 @@ module.exports = function(RED) {
                     sendResults(node, id, msgs);
                 },
                 on: function() {
+                    if (arguments[0] === "input") {
+                        throw new Error(RED._("function.error.inputListener"));
+                    }
                     node.on.apply(node, arguments);
                 },
                 status: function() {
@@ -141,6 +156,9 @@ module.exports = function(RED) {
                 },
                 get: function() {
                     return node.context().get.apply(node,arguments);
+                },
+                keys: function() {
+                    return node.context().keys.apply(node,arguments);
                 },
                 get global() {
                     return node.context().global;
@@ -155,6 +173,9 @@ module.exports = function(RED) {
                 },
                 get: function() {
                     return node.context().flow.get.apply(node,arguments);
+                },
+                keys: function() {
+                    return node.context().flow.keys.apply(node,arguments);
                 }
             },
             global: {
@@ -163,6 +184,9 @@ module.exports = function(RED) {
                 },
                 get: function() {
                     return node.context().global.get.apply(node,arguments);
+                },
+                keys: function() {
+                    return node.context().global.keys.apply(node,arguments);
                 }
             },
             setTimeout: function () {
@@ -211,7 +235,7 @@ module.exports = function(RED) {
         };
 
         try {
-            this.script = requireFromString(functionText)(sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
+            this.script = requireFromString(functionText)(sandbox.RED, sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
             if (RED.settings.nodeRedContribUnsafeFunctionAsyncReceive) {
               this.on("input", function(msg) {
                 setImmediate(function() {
@@ -228,6 +252,7 @@ module.exports = function(RED) {
                 while(node.outstandingIntervals.length > 0) {
                     clearInterval(node.outstandingIntervals.pop());
                 }
+                this.status({});
             });
         } catch(err) {
             // eg SyntaxError - which v8 doesn't include line number information
