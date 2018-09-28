@@ -1,7 +1,7 @@
 /**
  * Edited by Awear Solutions Ltd, 2017.
  *
- * Copyright 2013,2015 IBM Corp.
+ * Copyright JS Foundation and other contributors, http://js.foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 module.exports = function(RED) {
     "use strict";
+    var util = require("util");
     var requireFromString =  require('require-from-string');
 
     function sendResults(node,_msgid,msgs) {
@@ -105,13 +106,17 @@ module.exports = function(RED) {
         var node = this;
         this.name = n.name;
         this.func = n.func;
-        var functionText = "module.exports = function(RED, __node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
+        var functionText = "module.exports = function(util, RED, __node__, context, flow, global, setTimeout, clearTimeout, setInterval, clearInterval) { " +
         "  return function(msg) { " +
         "    var __msgid__ = msg._msgid;" +
         "    var node = {" +
+        "      id:__node__.id," +
+        "      name:__node__.name," +
         "      log:__node__.log," +
         "      error:__node__.error," +
         "      warn:__node__.warn," +
+        "      debug:__node__.debug," +
+        "      trace:__node__.trace," +
         "      on:__node__.on," +
         "      status:__node__.status," +
         "      send:function(msgs) { __node__.send(__msgid__,msgs);}" +
@@ -124,10 +129,13 @@ module.exports = function(RED) {
         this.outstandingTimers = [];
         this.outstandingIntervals = [];
         var sandbox = {
+            util: util,
             RED: {
                 util: RED.util
             },
             __node__: {
+                id: node.id,
+                name: node.name,
                 log: function() {
                     node.log.apply(node, arguments);
                 },
@@ -136,6 +144,12 @@ module.exports = function(RED) {
                 },
                 warn: function() {
                     node.warn.apply(node, arguments);
+                },
+                debug: function() {
+                    node.debug.apply(node, arguments);
+                },
+                trace: function() {
+                    node.trace.apply(node, arguments);
                 },
                 send: function(id, msgs) {
                     sendResults(node, id, msgs);
@@ -189,6 +203,15 @@ module.exports = function(RED) {
                     return node.context().global.keys.apply(node,arguments);
                 }
             },
+/**
+            env: {
+                get: function(envVar) {
+                    // For now, just return the env var. This will eventually
+                    // also return project settings and subflow instance properties
+                    return process.env[envVar]
+                }
+            },
+**/
             setTimeout: function () {
                 var func = arguments[0];
                 var timerId;
@@ -233,9 +256,16 @@ module.exports = function(RED) {
                 }
             }
         };
+        if (util.hasOwnProperty('promisify')) {
+            sandbox.setTimeout[util.promisify.custom] = function(after, value) {
+                return new Promise(function(resolve, reject) {
+                    sandbox.setTimeout(function(){ resolve(value); }, after);
+                });
+            };
+        }
 
         try {
-            this.script = requireFromString(functionText)(sandbox.RED, sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
+            this.script = requireFromString(functionText)(sandbox.util, sandbox.RED, sandbox.__node__, sandbox.context, sandbox.flow, sandbox.global, sandbox.setTimeout, sandbox.clearTimeout, sandbox.setInterval, sandbox.clearInterval);
             if (RED.settings.nodeRedContribUnsafeFunctionAsyncReceive) {
               this.on("input", function(msg) {
                 setImmediate(function() {
