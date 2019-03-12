@@ -203,15 +203,12 @@ module.exports = function(RED) {
                     return node.context().global.keys.apply(node,arguments);
                 }
             },
-/**
             env: {
                 get: function(envVar) {
-                    // For now, just return the env var. This will eventually
-                    // also return project settings and subflow instance properties
-                    return process.env[envVar]
+                    var flow = node._flow;
+                    return flow.getSetting(envVar);
                 }
             },
-**/
             setTimeout: function () {
                 var func = arguments[0];
                 var timerId;
