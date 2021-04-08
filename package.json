@@ -1,9 +1,10 @@
 {
   "name": "node-red-contrib-unsafe-function",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "The fast and furious version of function nodes",
   "dependencies": {
-    "require-from-string": "1.2.1"
+    "mkdirp": "^1.0.4",
+    "require-from-string": "^2.0.2"
   },
   "repository": {
     "type": "git",
@@ -13,6 +14,13 @@
     "name": "Oren Zomer",
     "email": "oren.zomer@gmail.com"
   },
+  "contributors": [
+    {
+      "name": "Daniele",
+      "email": "hanc2006@gmail.com",
+      "url": "https://github.com/hanc2006"
+    }
+  ],
   "license": "Apache-2.0",
   "keywords": [
     "node-red",
@@ -27,5 +35,8 @@
     "undef": true,
     "unused": true,
     "node": true
+  },
+  "scripts": {
+    "postinstall": "mkdirp ./modules"
   }
 }
