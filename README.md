@@ -16,8 +16,8 @@ The current behavior of node-red is that sending a message pauses until all the 
 in the flow finish handling the sent message (unless they specifically do it asynchronously).
 For more information, see [issue 833](https://github.com/node-red/node-red/issues/833).</del>
 
-`nodeRedContribUnsafeFunctionProfiling`: Set this RED settings variable to show
-<del>for each node a status message with basic profiling information: how many messages
+<del>`nodeRedContribUnsafeFunctionProfiling`: Set this RED settings variable to show
+for each node a status message with basic profiling information: how many messages
 were handled and what's the total\max execution time.</del>
 
 ## Change Log
