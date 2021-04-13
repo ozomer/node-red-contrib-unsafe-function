@@ -10,15 +10,21 @@ so if your code worked on a standard function node it should also work on `unsaf
 (like calling `require('fs')` and its operations).
 
 ## Additional Features
-`nodeRedContribUnsafeFunctionAsyncSend`, `nodeRedContribUnsafeFunctionAsyncReceive` -
+<del>`nodeRedContribUnsafeFunctionAsyncSend`, `nodeRedContribUnsafeFunctionAsyncReceive` -
 Set these RED settings variables in order to make the sending\receiving of messages asynchronous.
 The current behavior of node-red is that sending a message pauses until all the following nodes
 in the flow finish handling the sent message (unless they specifically do it asynchronously).
-For more information, see [issue 833](https://github.com/node-red/node-red/issues/833).
+For more information, see [issue 833](https://github.com/node-red/node-red/issues/833).</del>
 
-`nodeRedContribUnsafeFunctionProfiling`: Set this RED settings variable to show
+<del>`nodeRedContribUnsafeFunctionProfiling`: Set this RED settings variable to show
 for each node a status message with basic profiling information: how many messages
-were handled and what's the total\max execution time.
+were handled and what's the total\max execution time.</del>
+
+## Change Log
+### From 0.4.0 to 1.0.0
+https://github.com/ozomer/node-red-contrib-unsafe-function/issues/10#issue-852665839
+* Updating package dependency `require-from-string` to version 2.0.2.
+* Added package dependency `mkdirp` version 1.0.4.
 
 ## Change Log
 ### From 0.3.0 to 0.4.0
